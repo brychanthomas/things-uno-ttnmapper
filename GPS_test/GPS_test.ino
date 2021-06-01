@@ -7,12 +7,12 @@
 #include <TinyGPS++.h>
 #include <SoftwareSerial.h>
 
-#define TX 2
-#define RX 3
+#define GPS_TX 8
+#define GPS_RX 9
 
 TinyGPSPlus gps;
 
-SoftwareSerial gpsSerial(9, 8);
+SoftwareSerial gpsSerial(GPS_RX, GPS_TX);
 
 void setup() {
   Serial.begin(9600);
