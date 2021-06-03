@@ -38,7 +38,7 @@ byte transmitBuffer[9];
 
 void setup() {
   Serial.begin(9600);
-  //gpsSerial.begin(9600);
+  gpsSerial.begin(9600);
   loraSerial.begin(57600);
   delay(3000);
   ttn.personalize(devAddr, nwkSKey, appSKey);
@@ -47,10 +47,12 @@ void setup() {
 
 void loop() {
   if (gpsSerial.available() > 0) {
-    if (gps.encode(gpsSerial.read()) && gps.location.isValid() && gps.hdop.hdop() < 20) {
+    if (gps.encode(gpsSerial.read()) && gps.location.isValid() && gps.hdop.hdop() < 20 && gps.satellites.value() > 0 && gps.location.isUpdated()) {
       fillBuffer(gps.location.lat(), gps.location.lng(), gps.altitude.meters(), gps.hdop.hdop());
+      Serial.println(gps.hdop.hdop());
       printBuffer();
       transmit();
+      delay(50000);
     }
   }
 }
