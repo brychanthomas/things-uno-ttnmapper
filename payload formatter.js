@@ -1,15 +1,15 @@
 function Decoder(bytes, port) {
   
-  var MAX_LAT = 59.0
-  var MIN_LAT = 49.0
-  var MAX_LONG = 2.0
-  var MIN_LONG = -9.0
-  var MAX_ALT = 1350.0
-  var MIN_ALT = -10.0
+  var MAX_LAT = 53.5;
+  var MIN_LAT = 51.0;
+  var MAX_LONG = -2.0;
+  var MIN_LONG = -5.5;
+  var MAX_ALT = 1100.0;
+  var MIN_ALT = -10.0;
   
-  var LAT_RANGE = MAX_LAT - MIN_LAT
-  var LONG_RANGE = MAX_LONG - MIN_LONG
-  var ALT_RANGE = MAX_ALT - MIN_ALT
+  var LAT_RANGE = MAX_LAT - MIN_LAT;
+  var LONG_RANGE = MAX_LONG - MIN_LONG;
+  var ALT_RANGE = MAX_ALT - MIN_ALT;
   
   var decoded = {};
   
