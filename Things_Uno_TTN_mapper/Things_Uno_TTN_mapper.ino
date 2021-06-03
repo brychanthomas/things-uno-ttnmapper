@@ -1,13 +1,7 @@
 #include <TinyGPS++.h>
 #include <SoftwareSerial.h>
 #include <TheThingsNetwork.h>
-
-/**
- * todo:
- * - test gpsOn and gpsOff
- * - add radio code
- * - add low power code
- */
+#include <LowPower.h>
 
 #define GPS_TX 8
 #define GPS_RX 9
@@ -37,22 +31,28 @@ TheThingsNetwork ttn(loraSerial, Serial, TTN_FP_EU868);
 byte transmitBuffer[9];
 
 void setup() {
+  pinMode(LED_BUILTIN, OUTPUT);
+  digitalWrite(LED_BUILTIN, LOW);
   Serial.begin(9600);
   gpsSerial.begin(9600);
   loraSerial.begin(57600);
   delay(3000);
   ttn.personalize(devAddr, nwkSKey, appSKey);
   ttn.showStatus();
+  gpsOn();
 }
 
 void loop() {
   if (gpsSerial.available() > 0) {
-    if (gps.encode(gpsSerial.read()) && gps.location.isValid() && gps.hdop.hdop() < 20 && gps.satellites.value() > 0 && gps.location.isUpdated()) {
+    if (gps.encode(gpsSerial.read()) && gps.location.isValid() && gps.hdop.hdop() <= 2 && gps.satellites.value() > 0 && gps.location.isUpdated()) {
       fillBuffer(gps.location.lat(), gps.location.lng(), gps.altitude.meters(), gps.hdop.hdop());
       Serial.println(gps.hdop.hdop());
+      Serial.println("Transmitting!");
       printBuffer();
       transmit();
-      delay(50000);
+      Serial.println("Starting sleep");
+      sleep();
+      Serial.println("Sleep ended!");
     }
   }
 }
@@ -79,7 +79,9 @@ void fillBuffer(double lat, double lng, double alt, double hd) {
 }
 
 void transmit() {
+  digitalWrite(LED_BUILTIN, HIGH);
   ttn.sendBytes(transmitBuffer, sizeof(transmitBuffer));
+  digitalWrite(LED_BUILTIN, LOW);
 }
 
 void printBuffer() {
@@ -89,6 +91,26 @@ void printBuffer() {
     Serial.print(" ");
   }
   Serial.println();
+}
+
+// go into low power for a while
+void sleep() {
+  gpsOff();
+  delay(500);
+  ttn.sleep(40000);
+  delay(500);
+  for (int i = 0; i<4; i++)   { //low power sleep for 40 seconds
+    //LowPower.powerDown(SLEEP_8S, ADC_OFF, BOD_OFF);
+    LowPower.idle(SLEEP_8S, ADC_OFF, TIMER4_OFF, TIMER3_OFF, TIMER1_OFF, 
+          TIMER0_OFF, SPI_OFF, USART1_OFF, TWI_OFF, USB_OFF);
+    Serial.print(".");
+  }
+  Serial.println();
+  delay(500);
+  ttn.wake();
+  delay(500);
+  gpsOn();
+  delay(500);
 }
 
 void gpsOff() {
