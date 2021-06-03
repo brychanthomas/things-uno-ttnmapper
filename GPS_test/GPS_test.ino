@@ -18,13 +18,14 @@ void setup() {
   Serial.begin(9600);
   gpsSerial.begin(9600);
   delay(1000);
+  gpsOn();
 
 }
 
 void loop() {
   while (gpsSerial.available() > 0) {
     if (gps.encode(gpsSerial.read())) {
-      if (gps.location.isValid()) {
+      if (gps.location.isValid() && gps.hdop.hdop() < 50 && gps.location.isUpdated()) {
         Serial.println("------------------");
         Serial.print("Long: ");
         Serial.println(gps.location.lng(), 8);
@@ -36,16 +37,25 @@ void loop() {
         Serial.println(gps.hdop.hdop());
         Serial.print("Sats: ");
         Serial.println(gps.satellites.value());
+        Serial.println("TURNING OFF...");
+        gpsOff();
+        delay(5000);
+        Serial.println("TURNING ON...");
+        gpsOn();
       } else {
         Serial.println("Invalid location!");
       }
     }
   }
+}
 
-//  if (millis() > 5000 && gps.charsProcessed() < 10)
-//  {
-//    Serial.println("No GPS detected");
-//    while(true);
-//  }
+void gpsOff() {
+  uint8_t ubx[] = {0xB5, 0x62, 0x02, 0x41, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00, 0x4D, 0x3B};
+  for(int i=0; i<16; i++) {
+    gpsSerial.write(ubx[i]);
+  }
+}
 
+void gpsOn() {
+  gpsSerial.write(0x01);
 }
