@@ -1,5 +1,6 @@
 #include <TinyGPS++.h>
 #include <SoftwareSerial.h>
+#include <TheThingsNetwork.h>
 
 /**
  * todo:
@@ -22,35 +23,39 @@
 #define LONG_RANGE MAX_LONG - MIN_LONG
 #define ALT_RANGE MAX_ALT - MIN_ALT
 
+#define loraSerial Serial1
+
 TinyGPSPlus gps;
 SoftwareSerial gpsSerial(GPS_RX, GPS_TX);
 
-byte transmitBuffer[9];
+const char *devAddr = "000000";
+const char *nwkSKey = "00000000000000000000000000000000";
+const char *appSKey = "00000000000000000000000000000000";
 
-double lat = 51.931417123;
-double lng = -3.281994123;
-double alt = 210.55223145;
-double hd = 0.859373479;
+TheThingsNetwork ttn(loraSerial, Serial, TTN_FP_EU868);
+
+byte transmitBuffer[9];
 
 void setup() {
   Serial.begin(9600);
   //gpsSerial.begin(9600);
+  loraSerial.begin(57600);
   delay(3000);
-  fillBuffer();
-  printBuffer();
+  ttn.personalize(devAddr, nwkSKey, appSKey);
+  ttn.showStatus();
 }
 
 void loop() {
-//  if (gpsSerial.available() > 0) {
-//    if (gps.encode(gpsSerial.read()) && gps.location.isValid() && gps.hdop.hdop() < 20) {
-//      
-//    }
-//  }
-  printBuffer();
-  delay(20000);
+  if (gpsSerial.available() > 0) {
+    if (gps.encode(gpsSerial.read()) && gps.location.isValid() && gps.hdop.hdop() < 20) {
+      fillBuffer(gps.location.lat(), gps.location.lng(), gps.altitude.meters(), gps.hdop.hdop());
+      printBuffer();
+      transmit();
+    }
+  }
 }
 
-void fillBuffer() {
+void fillBuffer(double lat, double lng, double alt, double hd) {
   uint32_t latitude = 16777215 * (lat - MIN_LAT) / (LAT_RANGE);
   uint32_t longitude = 16777215 * (lng - MIN_LONG) / (LONG_RANGE);
   uint16_t altitude = 65535 * (alt - MIN_ALT) / (ALT_RANGE);
@@ -69,6 +74,10 @@ void fillBuffer() {
   transmitBuffer[7] = altitude & 0xff;
 
   transmitBuffer[8] = hdop;
+}
+
+void transmit() {
+  ttn.sendBytes(transmitBuffer, sizeof(transmitBuffer));
 }
 
 void printBuffer() {
